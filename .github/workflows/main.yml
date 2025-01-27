@@ -1,0 +1,41 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14' # Ajusta la versión de Node.js si es necesario
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Install dependencies
+        run: npm install
+
+      # Ejecutar tests unitarios solo en la rama develop
+      - name: Run unit tests on develop branch
+        if: github.ref == 'refs/heads/develop'
+        run: npm run test:unit
+
+      # Ejecutar todos los tests (unitarios + integración) en la rama main para PRs
+      - name: Run all tests (unit + integration) on main branch (before PR)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'pull_request'
+        run: npm run test:all
